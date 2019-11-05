@@ -13,6 +13,9 @@ var pictureCanvas = document.getElementById('picture-canvas');
 pictureCanvas.width = 320;
 pictureCanvas.height = 240; // 指定宽高
 
+// audio
+var audioPlayer = document.getElementById('audio-player');
+
 
 if (!navigator.mediaDevices ||
     !navigator.mediaDevices.enumerateDevices) {
@@ -47,6 +50,7 @@ if (!navigator.mediaDevices ||
     navigator.mediaDevices.getUserMedia(constants)  // 获取音视频流，结果返回一个Promise
         .then((stream) => {
             videoPlayer.srcObject = stream; // 将流输入到video中进行播放
+            audioPlayer.srcObject = stream; // 单独提取音频流
             return navigator.mediaDevices.enumerateDevices();   // 媒体设备管理，返回一个promise
         })
         .then((deviceInfos) => {

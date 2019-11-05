@@ -3,6 +3,27 @@
 
 <head>
 	<title>Web-RTC</title>
+	<style>
+		.none {
+			-webkit-filter: none;
+		}
+
+		.blur {
+			-webkit-filter: blur(3px);
+		}
+
+		.grayscale {
+			-webkit-filter: grayscale(1);
+		}
+
+		.invert {
+			-webkit-filter: invert(1);
+		}
+
+		.sepia {
+			-webkit-filter: sepia(1);
+		}
+	</style>
 </head>
 
 <body>
@@ -17,6 +38,16 @@
 	<div>
 		<label>视频设备</label>
 		<select id="video-device"></select>
+	</div>
+	<div>
+		<label>适配滤镜</label>
+		<select id="filter">
+			<option value="none">None</option>
+			<option value="blur">模糊</option>
+			<option value="grayscale">灰色</option>
+			<option value="invert">反差</option>
+			<option value="sepia">复古</option>
+		</select>
 	</div>
 	<div>
 		<video autoplay playsinline id="video-player"></video>

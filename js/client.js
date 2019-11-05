@@ -3,35 +3,42 @@ var videoPlayer = document.getElementById("video-player");
 var audioInput = document.getElementById("audio-input");
 var audioOutput = document.getElementById("audio-output");
 var videoDevices = document.getElementById("video-device");
+var filterSelect = document.getElementById('filter');
 
 
 if (!navigator.mediaDevices ||
     !navigator.mediaDevices.enumerateDevices) {
     console.log('不支持获取音视频设备方法');
 } else {
-    // // 向浏览器请求音视频权限
-    // // 适配不同浏览器的getUserMedia
-    // navigator.getUserMedia = navigator.getUserMedia ||
-    //     navigator.webkitGetUserMedia ||
-    //     navigator.mozGetUserMedia ||
-    //     navigator.msGetUserMedia;
-    // if (navigator.getUserMedia) {
-    //     console.log('支持getUserMedia方法')
-    // } else {
-    //     console.log('不支持getUserMedia方法')
-    // }
-
-
-
-    // 约束限制，获取音频和视频
+    // 对获取的音频和视频的参数约束
     var constants = {
-        video: true,    // 音视频都获取
-        audio: true
+        video: {
+            width: {
+                min: 300,
+                max: 640
+            },
+            height: 500,
+            frameRate: {
+                min: 15,
+                max: 30
+            },
+            facingMode: 'enviroment', //后置摄像头，前置为user
+        },
+        audio: {
+            volume: 0.5,                 // 录音音量大小
+            sampleRate: 16,                 //采样率
+            echoCancellation: true,   //回音消除
+            autoGainControl: true,    //自动增益
+            noiseSuppression: true,   //噪音消除
+            // channelCount: 1,       //声道
+            // deviceID,          //指定音频设备
+            // groupID
+        }
     }
-    // 获取音视频流，并展示到video中
+    // 请求音视频权限，成功之后，获取音视频流，并展示到video中
     navigator.mediaDevices.getUserMedia(constants)  // 获取音视频流，结果返回一个Promise
         .then((stream) => {
-            videoPlayer.srcObject = stream;
+            videoPlayer.srcObject = stream; // 将流输入到video中进行播放
             return navigator.mediaDevices.enumerateDevices();   // 媒体设备管理，返回一个promise
         })
         .then((deviceInfos) => {
@@ -52,4 +59,8 @@ if (!navigator.mediaDevices ||
         .catch((err) => {
             console.log('err', err);
         })
+}
+
+filterSelect.onchange = function () {
+    videoPlayer.className = filterSelect.value;
 }

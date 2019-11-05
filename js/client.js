@@ -1,9 +1,17 @@
 'use strict'
-var videoPlayer = document.getElementById("video-player");
+// devices
 var audioInput = document.getElementById("audio-input");
 var audioOutput = document.getElementById("audio-output");
 var videoDevices = document.getElementById("video-device");
+// video
+var videoPlayer = document.getElementById("video-player");
+// filter selector
 var filterSelect = document.getElementById('filter');
+// snapshot function
+var snapshotButton = document.getElementById('snapshot');
+var pictureCanvas = document.getElementById('picture-canvas');
+pictureCanvas.width = 320;
+pictureCanvas.height = 240; // 指定宽高
 
 
 if (!navigator.mediaDevices ||
@@ -61,6 +69,13 @@ if (!navigator.mediaDevices ||
         })
 }
 
+// 添加事件监听
 filterSelect.onchange = function () {
     videoPlayer.className = filterSelect.value;
+}
+// 为截图按钮添加事件监听
+snapshotButton.onclick = function () {
+    // 从播放器截取画面，并展示
+    pictureCanvas.className = filterSelect.value;
+    pictureCanvas.getContext('2d').drawImage(videoPlayer, 0, 0, pictureCanvas.width, pictureCanvas.height);
 }

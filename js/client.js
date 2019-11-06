@@ -10,8 +10,8 @@ var filterSelect = document.getElementById('filter');
 // snapshot function
 var snapshotButton = document.getElementById('snapshot');
 var pictureCanvas = document.getElementById('picture-canvas');
-pictureCanvas.width = 320;
-pictureCanvas.height = 240; // 指定宽高
+pictureCanvas.width = 160;
+pictureCanvas.height = 90; // 指定宽高
 
 // audio
 var audioPlayer = document.getElementById('audio-player');
@@ -25,10 +25,10 @@ if (!navigator.mediaDevices ||
     var constants = {
         video: {
             width: {
-                min: 300,
-                max: 640
+                min: 320,
+                max: 320
             },
-            height: 500,
+            height: 180,
             frameRate: {
                 min: 15,
                 max: 30
@@ -51,6 +51,7 @@ if (!navigator.mediaDevices ||
         .then((stream) => {
             videoPlayer.srcObject = stream; // 将流输入到video中进行播放
             audioPlayer.srcObject = stream; // 单独提取音频流
+            window.stream = stream;         // 将获取的流添加到全局window中
             return navigator.mediaDevices.enumerateDevices();   // 媒体设备管理，返回一个promise
         })
         .then((deviceInfos) => {

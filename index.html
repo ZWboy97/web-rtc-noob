@@ -64,11 +64,43 @@
 	<div>
 		<canvas id='picture-canvas'></canvas>
 	</div>
+	<table>
+		<tr>
+			<td>
+				<label>用户名</label>
+				<input type="text" id="username">
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<label>房间号</label>
+				<input type="text" id="room">
+				<button id="connect-btn">连接</button>
+				<button id="disconnect-btn">离开</button>
+
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<label>内容</label>
+				<textarea disabled id="message-output" cols="30" rows="10"></textarea>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<label>输入</label>
+				<textarea id="message-input" cols="30" rows="10"></textarea>
+				<button id="send">发送</button>
+			</td>
+		</tr>
+	</table>
 	<!-- webrtc适配 -->
 	<script src='https://webrtc.github.io/adapter/adapter-latest.js'></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
 	<script src='./js/client.js'></script>
 	<script src='./js/recorder.js'></script>
 	<script src='./js/displaymedia.js'></script>
+	<script src="./js/chatting.js"></script>
 </body>
 
 </html>

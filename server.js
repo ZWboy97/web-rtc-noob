@@ -48,17 +48,29 @@ var options = {
 var https_server = https.createServer(options, app);
 var io = socketIO.listen(https_server);
 io.sockets.on('connection', (socket) => {
-	socket.on('join', (room) => {
+	console.log(`new connection,socket.id=${socket.id}`)
+	socket.on('join', (user, room) => {
 		socket.join(room);
 		var myRoom = io.sockets.adapter.rooms[room];
 		var userNumber = Object.keys(myRoom.sockets).length;
-		logger.log(`new user join room,room=${room},room size = ${userNumber}, user id = ${socket.id}`);
-		socket.emit('joined', room, socket.id, userNumber);	// 回复本用户
-		// socket.to(room).emit('joined', room, socket.id);	// 给除自己以外的房间所有用户发消息
+		console.log(`new user join,join room ${room},room size=${userNumber}, user id = ${socket.id}`);
+		socket.emit('joined', room, userNumber, `连接成功`);	// 回复本用户
+		socket.to(room).emit('system', room, `用户${user}进入直播间`);	// 给除自己以外的房间所有用户发消息
 		// io.in(room).emit('joined', room, socket.id);		// 给所有房间中的人发送消息，包括自己
 		// socket.broadcast.emit('joined', room, socket.id);	// 给全站广播消息
 	})
-})
+	socket.on('message', (user, room, data) => {
+		console.log(`message receive,user=${user}, room=${room},data=${data}`);
+		socket.emit('message', user, room, data);	// 回复本用户
+		socket.to(room).emit('message', user, room, data);	// 给除自己以外的房间所有用户发消息
+	});
+	socket.on('leave', (user, room, data) => {
+		console.log(`user leave, user=${user},room=${room},data=${data}`);
+		socket.leave(room);
+		socket.emit('leaved', user, room, `退出直播间成功`);	// 回复本用户
+		socket.to(room).emit('system', room, `用户${user}退出直播间`);	// 给除自己以外的房间所有用户发消息
+	});
+});
 io.sockets.on('leave', (socket) => {
 	socket.on('leave', (room) => {
 		socket.join(room);

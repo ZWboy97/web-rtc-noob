@@ -1,7 +1,7 @@
 'use strict'
 
 var localVideo = document.getElementById('localvideo');
-var remoteVideo = document.getElementById('remoteVideo');
+var remoteVideo = document.getElementById('remotevideo');
 var btnConnectSig = document.getElementById('connectserver');
 var btnLeave = document.getElementById('leave');
 var consoleLog = document.getElementById('console');
@@ -30,7 +30,7 @@ function getLocalMedia() {
     }
     var constants = {
         video: true,
-        audio: false
+        audio: true
     }
     navigator.mediaDevices.getUserMedia(constants)
         .then((stream) => {
@@ -41,6 +41,29 @@ function getLocalMedia() {
             console.log('获取音视频失败');
             alert('获取本地音视频流失败');
         });
+}
+
+// 进行媒体协商
+function call() {
+    if (state === 'joined_conn') {
+        if (peerConnection) {
+            var options = {
+                offerToReceiveVideo: 1,
+                offerToReceiveAudio: 1,
+            }
+            peerConnection.createOffer(options)
+                .then((desc) => {
+                    peerConnection.setLocalDescription(desc);
+                    // 并将desc发给对方
+                    if (socket) {
+                        socket.emit('media-message', roomid, desc);
+                    }
+                })
+                .catch((error) => {
+                    console.log('fail to get offer:', error);
+                })
+        }
+    }
 }
 
 // 创建PeerConnection
@@ -59,19 +82,27 @@ function createPeerConnection() {
         // 为peerconnection设置双向的监听
         peerConnection.onicecandidate = (e) => {
             if (e.candidate) {
-                // 将他发送到对方
+                // 将candidate发送到对方
+                socket.emit('media-message', roomid, {
+                    type: 'candidate',
+                    label: e.candidate.sdpMLineIndex,
+                    id: e.candidate.sdpMid,
+                    candidate: e.candidate.candidate
+                });
             }
         }
         // 监听远程媒体流track，并在页面上展示
         peerConnection.ontrack = (e) => {
-            console.log('ontrack');
-            remoteVideo.srcObject = e.streams[0];
+            console.log('ontrack,e=', e);
+            if (e.streams[0]) {
+                remoteVideo.srcObject = e.streams[0];
+            }
         }
     }
     // 将本地的媒体流添加到连接的track中
     if (localStream) {
         localStream.getTracks().forEach((track) => {
-            peerConnection.addTrack(track);
+            peerConnection.addTrack(track, localStream);
         })
     }
 }
@@ -130,6 +161,7 @@ btnConnectSig.onclick = (e) => {
         state = 'joined_conn';
         consoleMessage(`state:${state}`);
         // 然后进行媒体协商
+        call();
 
     });
     // 满员了
@@ -157,9 +189,36 @@ btnConnectSig.onclick = (e) => {
         closePeerConnection();
     });
     // 媒体协商message
-    socket.on('media-message', (roomid, message) => {
-        consoleMessage(`媒体协商消息：${roomid}, ${message}`);
+    socket.on('media-message', (message) => {
+        consoleMessage(`来自对方的媒体协商消息: ${JSON.stringify(message)}`);
         // 媒体协商消息
+        if (!message) {
+            return;
+        }
+        // 对消息进行处理
+        if (message.type === 'offer') {
+            peerConnection.setRemoteDescription(new RTCSessionDescription(message));
+            peerConnection.createAnswer()
+                .then((desc) => {
+                    peerConnection.setLocalDescription(desc);
+                    if (socket) {
+                        socket.emit('media-message', roomid, desc);
+                    }
+                })
+                .catch((error) => {
+                    console.log('create answer error:', error)
+                })
+        } else if (message.type === 'answer') {
+            peerConnection.setRemoteDescription(new RTCSessionDescription(message));
+        } else if (message.type === 'candidate') {
+            var candidate = new RTCIceCandidate({
+                sdpMLineIndex: message.label,
+                candidate: message.candidate
+            });
+            peerConnection.addIceCandidate(candidate);
+        } else {
+            console.log('error message type');
+        }
     });
     // send message
     socket.emit('media-join', roomid);
@@ -176,4 +235,3 @@ btnLeave.onclick = () => {
     // 关闭媒体流
     closeLocalMedia();
 }
-

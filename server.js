@@ -74,25 +74,27 @@ io.sockets.on('connection', (socket) => {
 		socket.emit('leaved', user, room, `退出直播间成功`);	// 回复本用户
 		socket.to(room).emit('system', room, `用户${user}退出直播间`);	// 给除自己以外的房间所有用户发消息
 	});
-	// +++++++++++++++++++++web-rtc音视频信令服务+++++++++++++++++++++
+	// +++++++++++++++++++++ web-rtc音视频信令服务 +++++++++++++++++++++
 	// 加入直播间
 	socket.on('media-join', (roomid) => {
+		console.log(`media-join:roomid=${roomid}`);
 		socket.join(roomid);
 		var liveRoom = io.sockets.adapter.rooms[roomid];
 		var clientCount = Object.keys(liveRoom.sockets).length;
 		if (clientCount === 1) {	// 第一个用户
-			socket.emit('joined', `连接成功`, socket.id);
+			socket.emit('media-joined', `连接成功,第一个用户`, socket.id);
 		} else if (clientCount === 2) {
-			socket.emit('joined', `连接成功`, socket.id);
-			socket.to(roomid).emit('media-sys', socket.id);	// 告诉另一个人
+			socket.emit('media-joined', `连接成功，第二个用户`, socket.id);
+			socket.to(roomid).emit('media-other-joined', socket.id);	// 告诉另一个人
 		} else {
 			socket.leave(roomid);	// 从直播间踢出（socket连接还不断）
-			socket.emit('full', `满员了`);
+			socket.emit('media-full', `满员了`);
 		}
 	});
 	socket.on('media-leave', (roomid) => {
+		console.log(`media-leave: roomid=${roomid}`);
 		socket.emit('media-leaved', socket.id);
-		socket.to(roomid).emit('bye', socket.id);
+		socket.to(roomid).emit('media-other-leaved', socket.id);
 		socket.leave(roomid);
 	});
 	socket.on('media-message', (roomid, message) => {
@@ -103,6 +105,7 @@ io.sockets.on('connection', (socket) => {
 });
 // socket连接断开处理
 io.sockets.on('leave', (socket) => {
+	console.log(`socket leave! socketid=${socket.id}`);
 	socket.on('leave', (room) => {
 		socket.join(room);
 		var myRoom = io.sockets.adapter.rooms[room];

@@ -71,7 +71,8 @@ btnCall.onclick = () => {
     // 两端进行媒体协商
     var offerOptions = {
         offerToReceiveAudio: 0,
-        offerToReceiveVideo: 1
+        offerToReceiveVideo: 1,
+        iceRestart: false
     }
     pc1.createOffer(offerOptions)
         .then((desc) => {

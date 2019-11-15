@@ -12,7 +12,32 @@
 ## 使用方法
 - 下载代码
 ```js
-git clone https://github.com/ZWboy97/web-rtc-noob
+git clone https://github.com/ZWboy97/web-rtc-noob.git
 ```
 - 进入目录
 ```
+cd web-rtc-noob
+```
+
+- 安装依赖
+```
+npm install
+```
+
+- 启动信令服务器
+```
+node server.js
+```
+
+## 使用
+- index.html
+  - web-rtc设备管理
+  - 音视频采集、录制
+  - 聊天服务器
+ - localp2p.html
+  - 界面内的音视频通信
+  - 用于熟悉web-rtc媒体协商流程
+ - remotep2p.html
+  - 真正的远程p2p聊天
+  - 使用coturn作为stun以及turn服务器
+

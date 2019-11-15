@@ -7,23 +7,27 @@
 
 <body>
     <div>
-        <div>
-            <h2>本地音视频预览</h2>
-            <video autoplay playsinline id='localvideo' width="300"></video>
+        <div style="display: flex; justify-content: space-around;">
+            <div>
+                <h2>本地音视频预览</h2>
+                <video autoplay playsinline id='localvideo' width="300" style="background: black;"></video>
+            </div>
+            <div>
+                <h2>远程音视频预览</h2>
+                <video autoplay playsinline id='remotevideo' width="300" style="background: black;"></video>
+            </div>
         </div>
+    </div>
+    <div style="display: flex; justify-content: space-around; margin-top: 20px;">
         <div>
-            <h2>远程音视频预览</h2>
-            <video autoplay playsinline id='remotevideo' width="300"></video>
+            房间号
+            <input id="input-roomid" />
+            <button id="connectserver"> 连接信令服务器</button>
+            <button id='leave' disabled>离开直播间</button>
         </div>
     </div>
     <div>
-        房间号
-        <input id="input-roomid" />
-        <button id="connectserver"> 连接信令服务器</button>
-        <button id='leave' disabled>离开直播间</button>
-    </div>
-    <div>
-        <h2>Console</h2>
+        <h2>Message Console</h2>
         <textarea id="console" style="width: 100%; height: 300px;"></textarea>
     </div>
 

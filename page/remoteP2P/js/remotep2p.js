@@ -1,5 +1,6 @@
 'use strict'
 
+import LocalMediaHandler from './localMeidaHandler.js';
 var localVideo = document.getElementById('localvideo');
 var remoteVideo = document.getElementById('remotevideo');
 var btnConnectSig = document.getElementById('connectserver');
@@ -17,22 +18,16 @@ var peerConnection;
 
 var state = 'init';
 
+var localMediaHandler = new LocalMediaHandler();
+
 // 将日志输出到页面
 function consoleMessage(message) {
     consoleLog.value = consoleLog.value + message + '\n';
 }
 
-// 采集local音视频
+// 采集本地摄像头音视频
 function getLocalMedia() {
-    if (!navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia) {
-        console.log('not support getUserMedia');
-    }
-    var constants = {
-        video: true,
-        audio: true
-    }
-    navigator.mediaDevices.getUserMedia(constants)
+    localMediaHandler.getLocalMedia()
         .then((stream) => {
             localVideo.srcObject = stream;
             localStream = stream;
@@ -40,6 +35,15 @@ function getLocalMedia() {
         .catch((err) => {
             console.log('获取音视频失败');
             alert('获取本地音视频流失败');
+        });
+}
+
+// 关闭本地摄像头媒体采集
+function closeLocalMedia() {
+    localMediaHandler.closeLocalMedia()
+        .then(() => {
+            consoleMessage('关闭了本地媒体流');
+            localStream = null;
         });
 }
 
@@ -117,18 +121,8 @@ function closePeerConnection() {
     }
 }
 
-// 关闭本地媒体采集
-function closeLocalMedia() {
-    if (localStream && localStream.getTracks()) {
-        localStream.getTracks().forEach((track) => {
-            track.stop();
-        });
-        localStream = null;
-        consoleMessage('关闭了本地媒体流');
-    }
-}
-
 getLocalMedia();    // 首次打开自动预览本地画面
+
 
 btnConnectSig.onclick = (e) => {
 

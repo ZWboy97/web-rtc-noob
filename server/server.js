@@ -11,8 +11,8 @@ var socketIO = require('socket.io');	// socket服务器
 var log4js = require('log4js');			// 日志
 
 var app = express();
-app.use(serveIndex('.'));
-app.use(express.static('.'));
+app.use(serveIndex('../'));		// 设置serve的index目录
+app.use(express.static('../'));
 
 log4js.configure({
 	appenders: {

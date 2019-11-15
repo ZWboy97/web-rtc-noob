@@ -30,16 +30,16 @@ node server.js
 ```
 
 ## 使用
-- index.html
+- basic
   - web-rtc设备管理
   - 音视频采集、录制
   - 聊天服务器
   
-- localp2p.html
+- localp2p
   - 界面内的音视频通信
   - 用于熟悉web-rtc媒体协商流程
  
-- remotep2p.html
+- remotep2p
   - 真正的远程p2p聊天
   - 使用coturn作为stun以及turn服务器
 

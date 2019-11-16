@@ -1,6 +1,8 @@
 'use strict'
 
 import LocalMediaHandler from './localMeidaHandler.js';
+import PeerConnectHander from './peerConnectHandler.js';
+
 var localVideo = document.getElementById('localvideo');
 var remoteVideo = document.getElementById('remotevideo');
 var btnConnectSig = document.getElementById('connectserver');
@@ -9,16 +11,10 @@ var consoleLog = document.getElementById('console');
 var roomidInput = document.getElementById('input-roomid');
 
 var localStream;
-
 var roomid;
 
-var socket;
-
-var peerConnection;
-
-var state = 'init';
-
 var localMediaHandler = new LocalMediaHandler();
+var peerConnectHandler = new PeerConnectHander();
 
 // 将日志输出到页面
 function consoleMessage(message) {
@@ -27,15 +23,20 @@ function consoleMessage(message) {
 
 // 采集本地摄像头音视频
 function getLocalMedia() {
-    localMediaHandler.getLocalMedia()
-        .then((stream) => {
-            localVideo.srcObject = stream;
-            localStream = stream;
-        })
-        .catch((err) => {
-            console.log('获取音视频失败');
-            alert('获取本地音视频流失败');
-        });
+    return new Promise((resolve, reject) => {
+        localMediaHandler.getLocalMedia()
+            .then((stream) => {
+                localVideo.srcObject = stream;
+                localStream = stream;
+                resolve();
+            })
+            .catch((err) => {
+                console.log('获取音视频失败');
+                alert('获取本地音视频流失败');
+                reject();
+            });
+    })
+
 }
 
 // 关闭本地摄像头媒体采集
@@ -47,185 +48,56 @@ function closeLocalMedia() {
         });
 }
 
-// 进行媒体协商
-function call() {
-    if (state === 'joined_conn') {
-        if (peerConnection) {
-            var options = {
-                offerToReceiveVideo: 1,
-                offerToReceiveAudio: 1,
-            }
-            peerConnection.createOffer(options)
-                .then((desc) => {
-                    peerConnection.setLocalDescription(desc);
-                    // 并将desc发给对方
-                    if (socket) {
-                        socket.emit('media-message', roomid, desc);
-                    }
-                })
-                .catch((error) => {
-                    console.log('fail to get offer:', error);
-                })
-        }
-    }
-}
-
-// 创建PeerConnection
-function createPeerConnection() {
-    // step1：首先创建一个PeerConnection
-    consoleMessage('create RTCPeerConnection!');
-    if (!peerConnection) {
-        var pcConfig = {
-            'iceServers': [{
-                'urls': 'turn:stu.zwboy.cn:3478',
-                'credential': '123456',
-                'username': 'ljc'
-            }]
-        }
-        peerConnection = new RTCPeerConnection(pcConfig);
-        // 为peerconnection设置双向的监听
-        peerConnection.onicecandidate = (e) => {
-            if (e.candidate) {
-                // 将candidate发送到对方
-                socket.emit('media-message', roomid, {
-                    type: 'candidate',
-                    label: e.candidate.sdpMLineIndex,
-                    id: e.candidate.sdpMid,
-                    candidate: e.candidate.candidate
-                });
-            }
-        }
-        // 监听远程媒体流track，并在页面上展示
-        peerConnection.ontrack = (e) => {
-            console.log('ontrack,e=', e);
-            if (e.streams[0]) {
-                remoteVideo.srcObject = e.streams[0];
-            }
-        }
-    }
-    // 将本地的媒体流添加到连接的track中
-    if (localStream) {
-        localStream.getTracks().forEach((track) => {
-            peerConnection.addTrack(track, localStream);
-        })
-    }
-}
-
-
-// 销毁peerconnection
-function closePeerConnection() {
-    if (peerConnection) {
-        consoleMessage('关闭了peerConnection');
-        peerConnection.close();
-        peerConnection = null;
-    }
-}
-
-getLocalMedia();    // 首次打开自动预览本地画面
-
-
-btnConnectSig.onclick = (e) => {
-
-    // step 1： 获取本地的音视频流并预览展示
-    if (!localStream) {
-        getLocalMedia();
-    }
-
-    // step 2：连接信令服务器
+function startP2PConnection() {
     roomid = roomidInput.value;
-    socket = io.connect();              // connect sig socket service
-    // 注册一些监听
-    // 进入直播间成功
-    socket.on('media-joined', (message, socketid) => {
+    peerConnectHandler.onMediaJoined = (message, socketid) => {
         btnConnectSig.disabled = true;
         btnLeave.disabled = false;
         consoleMessage(`系统消息:${message}`);
-
-        state = 'joined';
-        consoleMessage(`state:${state}`);
-        createPeerConnection();
-    });
-    // 第二个用户进入直播间
-    socket.on('media-other-joined', (socketid) => {
-        consoleMessage(`系统消息:第二个用户进入直播间，id=${socketid}`);
-
-        if (state === 'joined_unbind') {    // 之前对方先退出了
-            createPeerConnection();
-        }
-        state = 'joined_conn';
-        consoleMessage(`state:${state}`);
-        // 然后进行媒体协商
-        call();
-
-    });
-    // 满员了
-    socket.on('media-full', (message) => {
-        consoleMessage(`系统消息:${message}`);
-        alert('房间满了')
-        state = 'leaved';
-        consoleMessage(`state:${state}`);
-        socket.disconnect();
-    });
-    // 离开直播间
-    socket.on('media-leaved', (socketid) => {
+    }
+    peerConnectHandler.onMediaOtherJoined = (socketid) => {
+        consoleMessage('第二个用户加入直播间');
+    }
+    peerConnectHandler.onMediaFull = (message) => {
+        consoleMessage(`房间人数已满，稍后加入，message=${message}`);
+        alert('房间人数已满');
+    }
+    peerConnectHandler.onMediaLeaved = (socketid) => {
         consoleMessage(`系统消息:离开直播间成功,id=${socketid}`);
-        state = 'leaved';
-        consoleMessage(`state:${state}`);
-        socket.disconnect();
-        btnConnectSig.disabled = false;
-        btnLeave.disabled = true;
-    });
-    // 对方离开直播间
-    socket.on('media-other-leaved', (socketid) => {
-        consoleMessage(`系统消息:对方离开直播间，id=${socketid}`);
-        state = 'joined_unbind';
-        consoleMessage(`state:${state}`);
-        closePeerConnection();
-    });
-    // 媒体协商message
-    socket.on('media-message', (message) => {
-        consoleMessage(`来自对方的媒体协商消息: ${JSON.stringify(message)}`);
-        // 媒体协商消息
-        if (!message) {
-            return;
+    }
+    peerConnectHandler.onMediaOtherLeaved = (socketid) => {
+        consoleMessage(`系统消息:对方离开直播间,id=${socketid}`);
+    }
+    peerConnectHandler.onMediaMessage = (message) => {
+        consoleMessage(`媒体协商消息`);
+        //consoleMessage(`来自对方的媒体协商消息: ${JSON.stringify(message)}`);
+    }
+    peerConnectHandler.onTrack = (e) => {
+        consoleMessage(`收到媒体流：e=${e}`)
+        if (e.streams[0]) {
+            remoteVideo.srcObject = e.streams[0];
         }
-        // 对消息进行处理
-        if (message.type === 'offer') {
-            peerConnection.setRemoteDescription(new RTCSessionDescription(message));
-            peerConnection.createAnswer()
-                .then((desc) => {
-                    peerConnection.setLocalDescription(desc);
-                    if (socket) {
-                        socket.emit('media-message', roomid, desc);
-                    }
-                })
-                .catch((error) => {
-                    console.log('create answer error:', error)
-                })
-        } else if (message.type === 'answer') {
-            peerConnection.setRemoteDescription(new RTCSessionDescription(message));
-        } else if (message.type === 'candidate') {
-            var candidate = new RTCIceCandidate({
-                sdpMLineIndex: message.label,
-                candidate: message.candidate
-            });
-            peerConnection.addIceCandidate(candidate);
-        } else {
-            console.log('error message type');
-        }
-    });
-    // send message
-    socket.emit('media-join', roomid);
+    }
+    peerConnectHandler.initConnect(roomid, localStream);
+}
+
+
+getLocalMedia();    // 首次打开自动预览本地画面
+
+btnConnectSig.onclick = (e) => {
+    if (!localStream) {
+        getLocalMedia().then(() => {
+            startP2PConnection();
+        });
+    } else {
+        startP2PConnection();
+    }
+
 }
 
 btnLeave.onclick = () => {
-    if (socket) {
-        socket.emit('media-leave', roomid);
-    }
     btnLeave.disabled = true;
     btnConnectSig.disabled = false;
-    // 销毁连接
-    closePeerConnection();
-    // 关闭媒体流
+    peerConnectHandler.leaveAndDisconnect();
     closeLocalMedia();
 }

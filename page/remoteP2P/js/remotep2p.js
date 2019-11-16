@@ -126,7 +126,11 @@ btnLeave.onclick = () => {
     btnLeave.disabled = true;
     btnConnectSig.disabled = false;
     peerConnectHandler.leaveAndDisconnect();
-    closeLocalMedia();
+    if (localStreamType === 'camera') {
+        closeLocalMedia();
+    } else if (localStreamType === 'screen') {
+        closeScreenMedia();
+    }
 }
 
 btnSwitch.onclick = () => {
@@ -135,12 +139,18 @@ btnSwitch.onclick = () => {
         closeLocalMedia();
         getScreenMedia().then(() => {
             consoleMessage('将本地音视频切换为屏幕分享');
+            if (peerConnectHandler.state === 'joined_conn') {
+                peerConnectHandler.updateLocalStream(localStream);
+            }
         });
     } else if (localStreamType === 'screen') {
         localStreamType = 'camera';
         closeScreenMedia();
         getLocalMedia().then(() => {
             consoleMessage('将本地音视频切换为摄像头');
+            if (peerConnectHandler.state === 'joined_conn') {
+                peerConnectHandler.updateLocalStream(localStream);
+            }
         });
     }
 }

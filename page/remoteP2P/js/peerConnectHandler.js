@@ -115,87 +115,102 @@ class PeerConnectHandler {
                 this.onMediaMessage(message);
             }
         });
+    }
 
 
-        // 进行媒体协商
-        this.sendNegotiationOffer = () => {
-            // 只有在双方的socket通信链路已经连接的时候
-            if (this.state === 'joined_conn') {
-                if (this.peerConnection) {
-                    var options = {
-                        offerToReceiveVideo: 1,
-                        offerToReceiveAudio: 1,
-                    }
-                    this.peerConnection.createOffer(options)
-                        .then((desc) => {
-                            // 获得本地的SDP
-                            this.peerConnection.setLocalDescription(desc);
-                            // 并将desc发给对方
-                            if (socket) {
-                                socket.emit('media-message', this.roomid, desc);
-                            }
-                        })
-                        .catch((error) => {
-                            console.log('fail to get offer:', error);
-                        })
-                }
-            }
-        }
-
-        // 创建PeerConnection,并将媒体流加入其中
-        this.createPeerConnection = () => {
-            if (!this.peerConnection) {
-                var pcConfig = {
-                    'iceServers': [{
-                        'urls': 'turn:stu.zwboy.cn:3478',
-                        'credential': '123456',
-                        'username': 'ljc'
-                    }]
-                };
-                this.peerConnection = new RTCPeerConnection(pcConfig);
-                // onicecandidate方法在setLocalDescription方法之后调用
-                this.peerConnection.onicecandidate = (e) => {
-                    if (e.candidate) {
-                        // 将candidate发送到对方，对方加入到icecandidate中进行选择
-                        socket.emit('media-message', this.roomid, {
-                            type: 'candidate',
-                            label: e.candidate.sdpMLineIndex,
-                            id: e.candidate.sdpMid,
-                            candidate: e.candidate.candidate
-                        });
-                    }
-                }
-                // 监听远程媒体流track，接收到对方数据流的时候会触发调用
-                this.peerConnection.ontrack = (e) => {
-                    if (this.onTrack) {
-                        this.onTrack(e)
-                    }
-                }
-            }
-
-            // 将本地的媒体流添加到连接的track中
-            if (this.localStream) {
-                this.localStream.getTracks().forEach((track) => {
-                    this.peerConnection.addTrack(track, this.localStream);
-                })
-            }
-        }
-
-        // 销毁peerconnection
-        this.closePeerConnection = () => {
+    // 进行媒体协商
+    sendNegotiationOffer = () => {
+        // 只有在双方的socket通信链路已经连接的时候
+        if (this.state === 'joined_conn') {
             if (this.peerConnection) {
-                this.peerConnection.close();
-                this.peerConnection = null;
+                var options = {
+                    offerToReceiveVideo: 1,
+                    offerToReceiveAudio: 1,
+                }
+                this.peerConnection.createOffer(options)
+                    .then((desc) => {
+                        // 获得本地的SDP
+                        this.peerConnection.setLocalDescription(desc);
+                        // 并将desc发给对方
+                        if (this.socket) {
+                            this.socket.emit('media-message', this.roomid, desc);
+                        }
+                    })
+                    .catch((error) => {
+                        console.log('fail to get offer:', error);
+                    })
             }
-        }
-
-        this.leaveAndDisconnect = () => {
-            if (this.socket) {
-                this.socket.emit('media-leave', this.roomid);
-            }
-            this.closePeerConnection();
         }
     }
+
+    // 创建PeerConnection,并将媒体流加入其中
+    createPeerConnection = () => {
+        if (!this.peerConnection) {
+            var pcConfig = {
+                'iceServers': [{
+                    'urls': 'turn:stu.zwboy.cn:3478',
+                    'credential': '123456',
+                    'username': 'ljc'
+                }]
+            };
+            this.peerConnection = new RTCPeerConnection(pcConfig);
+            // onicecandidate方法在setLocalDescription方法之后调用
+            this.peerConnection.onicecandidate = (e) => {
+                if (e.candidate) {
+                    // 将candidate发送到对方，对方加入到icecandidate中进行选择
+                    this.socket.emit('media-message', this.roomid, {
+                        type: 'candidate',
+                        label: e.candidate.sdpMLineIndex,
+                        id: e.candidate.sdpMid,
+                        candidate: e.candidate.candidate
+                    });
+                }
+            }
+            // 监听远程媒体流track，接收到对方数据流的时候会触发调用
+            this.peerConnection.ontrack = (e) => {
+                if (this.onTrack) {
+                    this.onTrack(e)
+                }
+            }
+        }
+
+        // 将本地的媒体流添加到连接的track中
+        if (this.localStream) {
+            this.localStream.getTracks().forEach((track) => {
+                this.peerConnection.addTrack(track, this.localStream);
+            })
+        }
+    }
+
+    // 销毁peerconnection
+    closePeerConnection = () => {
+        if (this.peerConnection) {
+            this.peerConnection.close();
+            this.peerConnection = null;
+        }
+    }
+
+    leaveAndDisconnect = () => {
+        if (this.socket) {
+            this.socket.emit('media-leave', this.roomid);
+        }
+        this.closePeerConnection();
+    }
+
+    updateLocalStream = (stream) => {
+        console.log('update local stream');
+        console.log('sender', this.peerConnection.getSenders())
+        this.peerConnection.getSenders().forEach((sender) => {
+            this.peerConnection.removeTrack(sender);
+        })
+        this.localStream = stream;
+        if (this.localStream) {
+            this.localStream.getTracks().forEach((track) => {
+                this.peerConnection.addTrack(track, this.localStream);
+            })
+        }
+    }
+
 }
 
 

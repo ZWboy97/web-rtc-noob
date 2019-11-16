@@ -47,6 +47,33 @@ class LocalMediaHandler {
             }
         });
     }
+
+    getScreenStream = (constants) => {
+        if (!navigator.mediaDevices ||
+            !navigator.mediaDevices.getDisplayMedia) {
+            console.log('sorry,your brower is not support function getDisplayMedia');
+            alert('sorry,your brower is not support function getDisplayMedia');
+        }
+        var _constants = constants ? constants : {
+            video: true,
+            audio: true
+        };
+        return new Promise((resolve, reject) => {
+            navigator.mediaDevices.getDisplayMedia(_constants)  // 获取电脑屏幕或者应用屏幕 
+                .then((stream) => {
+                    this.localStream = stream;
+                    resolve(stream);
+                })
+                .catch((err) => {
+                    console.log('err', err);
+                    reject(err);
+                })
+        });
+    }
+
+    closeScreenMedia = () => {
+        return this.closeLocalMedia();
+    }
 }
 
 export default LocalMediaHandler;

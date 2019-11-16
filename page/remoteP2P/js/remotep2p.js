@@ -9,11 +9,15 @@ var btnConnectSig = document.getElementById('connectserver');
 var btnLeave = document.getElementById('leave');
 var consoleLog = document.getElementById('console');
 var roomidInput = document.getElementById('input-roomid');
+var btnSwitch = document.getElementById('camera-screen-switch');
 
 var localStream;
 var roomid;
 
+var localStreamType = 'camera';
+
 var localMediaHandler = new LocalMediaHandler();
+var screenMediaHandler = new LocalMediaHandler();
 var peerConnectHandler = new PeerConnectHander();
 
 // 将日志输出到页面
@@ -36,12 +40,35 @@ function getLocalMedia() {
                 reject();
             });
     })
+}
 
+function getScreenMedia() {
+    return new Promise((resolve, reject) => {
+        screenMediaHandler.getScreenStream()
+            .then((stream) => {
+                localVideo.srcObject = stream;
+                localStream = stream;
+                resolve();
+            })
+            .catch((err) => {
+                console.log('获取音视频失败');
+                alert('获取本地音视频流失败');
+                reject();
+            });
+    })
 }
 
 // 关闭本地摄像头媒体采集
 function closeLocalMedia() {
     localMediaHandler.closeLocalMedia()
+        .then(() => {
+            consoleMessage('关闭了本地媒体流');
+            localStream = null;
+        });
+}
+
+function closeScreenMedia() {
+    screenMediaHandler.closeLocalMedia()
         .then(() => {
             consoleMessage('关闭了本地媒体流');
             localStream = null;
@@ -100,4 +127,20 @@ btnLeave.onclick = () => {
     btnConnectSig.disabled = false;
     peerConnectHandler.leaveAndDisconnect();
     closeLocalMedia();
+}
+
+btnSwitch.onclick = () => {
+    if (localStreamType === 'camera') {
+        localStreamType = 'screen';
+        closeLocalMedia();
+        getScreenMedia().then(() => {
+            consoleMessage('将本地音视频切换为屏幕分享');
+        });
+    } else if (localStreamType === 'screen') {
+        localStreamType = 'camera';
+        closeScreenMedia();
+        getLocalMedia().then(() => {
+            consoleMessage('将本地音视频切换为摄像头');
+        });
+    }
 }

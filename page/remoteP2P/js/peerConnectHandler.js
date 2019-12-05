@@ -146,10 +146,11 @@ class PeerConnectHandler {
         this.createPeerConnection = () => {
             if (!this.peerConnection) {
                 var pcConfig = {
+                    // 这里需要配置自己的turn服务器，或者采用google提供的公用的
                     'iceServers': [{
                         'urls': 'turn:stu.zwboy.cn:3478',
-                        'credential': '123456',
-                        'username': 'ljc'
+                        'credential': 'your_password',
+                        'username': 'your_name'
                     }]
                 };
                 this.peerConnection = new RTCPeerConnection(pcConfig);
